@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📱 Envoyer ma position</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #1a1a2e;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .card {
+      background: #16213e;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+    h1 { margin-bottom: 20px; font-size: 1.5em; }
+    #status {
+      margin: 20px 0;
+      padding: 10px;
+      border-radius: 8px;
+      background: #0f3460;
+    }
+    button {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>📱 Phone Tracker</h1>
+    <div id="status">En attente...</div>
+    <button onclick="startTracking()">▶ Démarrer</button>
+  </div>
+
+  <script>
+    const deviceId = 'device_' + Math.random().toString(36).substr(2, 6);
+
+    function startTracking() {
+      document.getElementById('status').innerText = '📡 Tracking actif...';
+      navigator.geolocation.watchPosition(async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        document.getElementById('status').innerText =
+          `✅ Lat: ${latitude.toFixed(4)}\nLng: ${longitude.toFixed(4)}`;
+        await fetch('/api/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: deviceId,
+            lat: latitude,
+            lng: longitude,
+            time: new Date().toLocaleTimeString()
+          })
+        });
+      }, (err) => {
+        document.getElementById('status').innerText = '❌ GPS refusé !';
+      }, { enableHighAccuracy: true });
+    }
+  </script>
+</body>
+</html>

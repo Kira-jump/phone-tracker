@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phone Tracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #1a1a2e; color: white; }
+    #header { padding: 15px; background: #16213e; text-align: center; font-size: 1.2em; }
+    #map { height: calc(100vh - 60px); width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="header">📍 Phone Tracker — Carte en direct</div>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([0, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+    async function loadPositions() {
+      try {
+        const res = await fetch('/api/positions');
+        const data = await res.json();
+        data.forEach(device => {
+          L.marker([device.lat, device.lng])
+            .addTo(map)
+            .bindPopup(`📱 ${device.id}<br>🕐 ${device.time}`);
+        });
+      } catch(e) { console.log('En attente...'); }
+    }
+    loadPositions();
+    setInterval(loadPositions, 10000);
+  </script>
+</body>
+</html>
