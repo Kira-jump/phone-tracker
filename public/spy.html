@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chargement...</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #1a1a2e; color: white; font-family: Arial, sans-serif; }
+    #map { height: 100vh; width: 100%; }
+    #info {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #16213e;
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 999;
+      font-size: 0.85em;
+      max-width: 220px;
+    }
+    #info h3 { margin-bottom: 10px; color: #e94560; }
+    #info p { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="info">
+    <h3>📡 Infos détectées</h3>
+    <p>⏳ Chargement...</p>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([0, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    async function getIPInfo() {
+      try {
+        const res = await fetch('http://ip-api.com/json/?fields=status,message,country,regionName,city,isp,lat,lon,query');
+        const data = await res.json();
+
+        if (data.status === 'success') {
+          // Afficher sur la carte
+          map.setView([data.lat, data.lon], 12);
+          L.marker([data.lat, data.lon])
+            .addTo(map)
+            .bindPopup(`📱 ${data.city}, ${data.country}`)
+            .openPopup();
+
+          // Afficher les infos
+          document.getElementById('info').innerHTML = `
+            <h3>📡 Infos détectées</h3>
+            <p>🌍 <b>Pays :</b> ${data.country}</p>
+            <p>🏙️ <b>Ville :</b> ${data.city}</p>
+            <p>📍 <b>Région :</b> ${data.regionName}</p>
+            <p>🌐 <b>IP :</b> ${data.query}</p>
+            <p>📡 <b>FAI :</b> ${data.isp}</p>
+            <p>🔢 <b>Lat :</b> ${data.lat}</p>
+            <p>🔢 <b>Lng :</b> ${data.lon}</p>
+          `;
+
+          // Envoyer au serveur
+          await fetch('/api/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: 'ip_' + data.query,
+              lat: data.lat,
+              lng: data.lon,
+              time: new Date().toLocaleTimeString()
+            })
+          });
+        }
+      } catch(e) {
+        document.getElementById('info').innerHTML = '<h3>❌ Erreur</h3><p>Impossible de récupérer les infos</p>';
+      }
+    }
+
+    getIPInfo();
+  </script>
+</body>
+</html>
